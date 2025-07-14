@@ -5,7 +5,7 @@ import { Send, Bot, Zap, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import ChatUI from "@/components/ChatUI";
 import { useEffect } from "react";
-
+import { chatWithDeepSeek, chatWithGPT } from "@/libs/apis";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -106,7 +106,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-gray-300 text-lg">Compare responses from ChatGPT and DeepSeek</p>
-          <Link href="/History" className="text-blue-400 hover:underline">
+          <Link href="/history" className="text-blue-400 hover:underline">
             View History
           </Link>
         </header>
