@@ -92,7 +92,7 @@ export default function Home() {
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Header */}
+        
         <header className="text-center py-12">
           <div className="inline-flex items-center gap-3 px-6 py-3 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl mb-6">
             <div className="flex gap-2">
@@ -111,7 +111,6 @@ export default function Home() {
           </Link>
         </header>
 
-        {/* Error display */}
         {error && (
           <div className="mx-auto mb-6 max-w-2xl px-6">
             <div className="flex items-center gap-3 p-4 backdrop-blur-xl bg-red-500/20 border border-red-500/30 rounded-xl text-red-200">
@@ -121,7 +120,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Chat responses */}
         <main className="flex-1 px-6 pb-32">
           <div className="max-w-10xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-8">
@@ -143,12 +141,11 @@ export default function Home() {
           </div>
         </main>
 
-        {/* Input form */}
+        
 
         <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-900/90 to-transparent backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
             <div className="relative group">
-              {/* Animated border */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
 
               <div className="relative flex items-end backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-2 shadow-2xl">
@@ -179,7 +176,6 @@ export default function Home() {
                   ) : (
                     <Send className="w-6 h-6 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform duration-200" />
                   )}
-                  {/* Button shine effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                 </button>
               </div>
