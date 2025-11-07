@@ -1,31 +1,21 @@
-const apiCallWithAuth = async (url, method) => {
-    const accessToken = getAccessToken();
-    let headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    headers.append("Authorization", `Bearer ${accessToken}`);
-    const requestOptions = {
-        method: method,
-        headers: headers,
-        redirect: "follow",
-    };
-    return await fetch(url, requestOptions)
-        .then((response) => response.json())
-        .then((result) => {
-            return result;
-        })
-        .catch((error) => console.log("error: ", error));
-};
+const API_URL = process.env.NEXT_PUBLIC_APP_API
 
-export const chatWithGPT = (text) => {
-    const url = `${WEB_URI}/api/v1/pvp/user-game-score/?game_slug=${game_slug}`;
-    const response = await apiCallWithAuth(url, "GET");
-    if (response?.code !== 200) return false;
-    return response.data;
+export const chatWithGPT = async (text) => {
+  const response = await fetch(`${API_URL}/generateTextOpenAi`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  })
+  const data = await response.json()
+  return data
 }
 
-export const chatWithDeepSeek = (text) => {
-    const url = `${WEB_URI}/api/v1/pvp/user-game-score/?game_slug=${game_slug}`;
-    const response = await apiCallWithAuth(url, "GET");
-    if (response?.code !== 200) return false;
-    return response.data;
+export const chatWithDeepSeek = async (text) => {
+  const response = await fetch(`${API_URL}/deepseekApiCall`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  })
+  const data = await response.json()
+  return data
 }

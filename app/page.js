@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Send, Bot, Zap, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import ChatUI from "@/components/ChatUI";
@@ -13,6 +13,7 @@ export default function Home() {
   const [deepSeekResponse, setDeepSeekResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   const textareaRef = useRef(null);
 
@@ -47,28 +48,29 @@ export default function Home() {
       setResponse("");
       setDeepSeekResponse("");
 
-      const [reply, deepSeekReply] = await Promise.all([
-        chatWithGPT(input),
-        chatWithDeepSeek(input),
-      ]);
+      startTransition(async () => {
+        const [reply, deepSeekReply] = await Promise.all([
+          chatWithGPT(input),
+          chatWithDeepSeek(input)
+        ]);
+        if (reply.error) setResponse(reply.message); else setResponse(reply.response);
+        if (deepSeekReply.error) setDeepSeekResponse(deepSeekReply.message); else setDeepSeekResponse(deepSeekReply.response);
 
-      setResponse(reply);
-      setDeepSeekResponse(deepSeekReply);
+        // Create a history item
+        const historyItem = {
+          timestamp: new Date().toISOString(),
+          question: input,
+          chatGPTResponse: reply.error ? reply.message : reply.response,
+          deepSeekResponse: deepSeekReply.error ? deepSeekReply.message : deepSeekReply.response,
+        };
 
-      // Create a history item
-      const historyItem = {
-        timestamp: new Date().toISOString(),
-        question: input,
-        chatGPTResponse: reply,
-        deepSeekResponse: deepSeekReply,
-      };
+        // Get existing history from localStorage
+        const existingHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
 
-      // Get existing history from localStorage
-      const existingHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-
-      // Save the new item
-      const updatedHistory = [historyItem, ...existingHistory];
-      localStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
+        // Save the new item
+        const updatedHistory = [historyItem, ...existingHistory];
+        localStorage.setItem("chatHistory", JSON.stringify(updatedHistory));
+      });
 
     } catch (err) {
       setError("Failed to get response. Please try again.");
