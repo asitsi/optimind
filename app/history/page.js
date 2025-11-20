@@ -8,6 +8,8 @@ import ChatUI from '@/components/ChatUI';
 const History = () => {
   const [history, setHistory] = useState([]);
 
+  console.log("history", history)
+
   useEffect(() => {
     const savedHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
     setHistory(savedHistory);
@@ -50,16 +52,16 @@ const History = () => {
                 <p className="mb-4 text-white"><strong>Q:</strong> {item.question}</p>
                 <div className="grid lg:grid-cols-2 gap-8">
                   <ChatUI
-                    response={item.chatGPTResponse}
+                    response={item.responses[0]}
                     isLoading={false}
-                    title="ChatGPT"
+                    title={item.selections[0]}
                     icon={Bot}
                     gradient="bg-gradient-to-br from-blue-500 to-cyan-500"
                   />
                   <ChatUI
-                    response={item.deepSeekResponse}
+                    response={item.responses[1]}
                     isLoading={false}
-                    title="DeepSeek"
+                    title={item.selections[1]}
                     icon={Zap}
                     gradient="bg-gradient-to-br from-purple-500 to-pink-500"
                   />
