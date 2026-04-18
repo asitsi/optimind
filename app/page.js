@@ -85,22 +85,27 @@ export default function Home() {
 
       const calls = models.map((m) => (fns[m] ? fns[m]() : Promise.resolve("")));
       const results = await Promise.all(calls);
+      const cleanedResults = results.map((res) =>
+        typeof res === "string" && res.toLowerCase().startsWith("error in")
+          ? "API token has been finish"
+          : res
+      );
 
-      setSelectedResponses(results);
+      setSelectedResponses(cleanedResults);
 
       const historyItem = {
         timestamp: new Date().toISOString(),
         question: input,
         selections: models,
-        responses: results,
+        responses: cleanedResults,
         chatGPTResponse: models.includes("ChatGPT")
-          ? results[models.indexOf("ChatGPT")]
+          ? cleanedResults[models.indexOf("ChatGPT")]
           : undefined,
         deepSeekResponse: models.includes("DeepSeek")
-          ? results[models.indexOf("DeepSeek")]
+          ? cleanedResults[models.indexOf("DeepSeek")]
           : undefined,
         geminiResponse: models.includes("Gemini")
-          ? results[models.indexOf("Gemini")]
+          ? cleanedResults[models.indexOf("Gemini")]
           : undefined,
       };
 
