@@ -4,6 +4,35 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import AuthModal from "@/components/AuthModal";
 
+const CASHFREE_SDK_SRC = "https://sdk.cashfree.com/js/v3/cashfree.js";
+
+function loadCashfreeSdk() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Cashfree SDK requires a browser"));
+  }
+  if (window.Cashfree) return Promise.resolve(window.Cashfree);
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${CASHFREE_SDK_SRC}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.Cashfree));
+      existing.addEventListener("error", () => reject(new Error("Failed to load Cashfree SDK")));
+      if (window.Cashfree) resolve(window.Cashfree);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = CASHFREE_SDK_SRC;
+    script.async = true;
+    script.onload = () => {
+      if (window.Cashfree) resolve(window.Cashfree);
+      else reject(new Error("Cashfree SDK loaded but Cashfree is undefined"));
+    };
+    script.onerror = () => reject(new Error("Failed to load Cashfree SDK"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function BuyTokensModal({ isOpen, onClose }) {
   const { data: session } = useSession();
   const [authOpen, setAuthOpen] = useState(false);
@@ -60,14 +89,24 @@ export default function BuyTokensModal({ isOpen, onClose }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || data?.message || "ORDER_FAILED");
 
-      const checkoutUrl = data?.checkoutUrl;
-      if (!checkoutUrl) throw new Error("Payment checkout URL missing");
+      const paymentSessionId = data?.paymentSessionId;
+      if (!paymentSessionId) throw new Error("Payment session missing");
 
-      // Redirect to Cashfree checkout.
-      window.location.href = checkoutUrl;
+      const Cashfree = await loadCashfreeSdk();
+      const mode = data?.env === "production" ? "production" : "sandbox";
+      const cashfree = Cashfree({ mode });
+
+      const result = await cashfree.checkout({
+        paymentSessionId,
+        redirectTarget: "_self",
+      });
+
+      // If checkout closes without redirect (popup/modal paths), surface any error.
+      if (result?.error) {
+        throw new Error(result.error?.message || "Checkout failed");
+      }
     } catch (err) {
       setError(err?.message || "Failed to create payment");
-    } finally {
       setCreatingOrder(false);
     }
   }
@@ -108,6 +147,7 @@ export default function BuyTokensModal({ isOpen, onClose }) {
                 <div className="grid grid-cols-1 gap-3">
                   {plans.map((p) => {
                     const active = p.planId === selectedPlanId;
+                    const calls = p.calls ?? p.tokensGranted;
                     return (
                       <button
                         key={p.planId}
@@ -117,7 +157,7 @@ export default function BuyTokensModal({ isOpen, onClose }) {
                           active ? "border-blue-400 bg-blue-500/20" : "border-white/20 bg-white/5 hover:bg-white/10"
                         }`}
                       >
-                        <div className="font-semibold">{p.tokensGranted} calls</div>
+                        <div className="font-semibold">{calls} calls</div>
                         <div className="text-sm text-gray-300">
                           {p.currency} {p.amount}
                         </div>
@@ -134,7 +174,7 @@ export default function BuyTokensModal({ isOpen, onClose }) {
                 onClick={handleBuy}
                 className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 transition hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {creatingOrder ? "Redirecting..." : "Buy now"}
+                {creatingOrder ? "Opening checkout..." : "Buy now"}
               </button>
               <button
                 onClick={onClose}
@@ -151,4 +191,3 @@ export default function BuyTokensModal({ isOpen, onClose }) {
     </div>
   );
 }
-
