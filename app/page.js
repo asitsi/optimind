@@ -3,20 +3,26 @@ import { useRef, useState } from "react";
 import { Bot, AlertCircle } from "lucide-react";
 import ChatUI from "@/components/ChatUI";
 import { useEffect } from "react";
-import { chatWithDeepSeek, chatWithGPT, chatWithGemini } from "@/libs/apis";
+import { chatWithDeepSeek, chatWithGPT, chatWithGemini, getQuotaStatus } from "@/libs/apis";
 import BackgroundFX from "@/components/BackgroundFX";
 import HeaderBar from "@/components/HeaderBar";
 import SelectedBadges from "@/components/SelectedBadges";
 import WelcomeModal from "@/components/WelcomeModal";
 import PromptInput from "@/components/PromptInput";
+import BuyTokensModal from "@/components/BuyTokensModal";
+import { useSession } from "next-auth/react";
+import { getGuestId } from "@/libs/guest";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
+  const [isBuyTokensOpen, setIsBuyTokensOpen] = useState(false);
   const [savedOptions, setSavedOptions] = useState([]);
   const [selectedResponses, setSelectedResponses] = useState([]);
+
+  const { data: session } = useSession();
 
   const textareaRef = useRef(null);
 
@@ -68,6 +74,14 @@ export default function Home() {
     if (!input.trim()) return;
 
     try {
+      const guestId = getGuestId();
+      const identity = { accessToken: session?.accessToken, guestId };
+      const quota = await getQuotaStatus(identity);
+      if (quota.remaining < 2) {
+        setIsBuyTokensOpen(true);
+        return;
+      }
+
       setIsLoading(true);
       setError("");
       setSelectedResponses(["", ""]);
@@ -78,34 +92,28 @@ export default function Home() {
           : ["ChatGPT", "DeepSeek"];
 
       const fns = {
-        ChatGPT: () => chatWithGPT(input),
-        DeepSeek: () => chatWithDeepSeek(input),
-        Gemini: () => chatWithGemini(input),
+        ChatGPT: () => chatWithGPT(input, identity),
+        DeepSeek: () => chatWithDeepSeek(input, identity),
+        Gemini: () => chatWithGemini(input, identity),
       };
 
       const calls = models.map((m) => (fns[m] ? fns[m]() : Promise.resolve("")));
       const results = await Promise.all(calls);
-      const cleanedResults = results.map((res) =>
-        typeof res === "string" && res.toLowerCase().startsWith("error in")
-          ? "API token has been finish"
-          : res
-      );
-
-      setSelectedResponses(cleanedResults);
+      setSelectedResponses(results);
 
       const historyItem = {
         timestamp: new Date().toISOString(),
         question: input,
         selections: models,
-        responses: cleanedResults,
+        responses: results,
         chatGPTResponse: models.includes("ChatGPT")
-          ? cleanedResults[models.indexOf("ChatGPT")]
+          ? results[models.indexOf("ChatGPT")]
           : undefined,
         deepSeekResponse: models.includes("DeepSeek")
-          ? cleanedResults[models.indexOf("DeepSeek")]
+          ? results[models.indexOf("DeepSeek")]
           : undefined,
         geminiResponse: models.includes("Gemini")
-          ? cleanedResults[models.indexOf("Gemini")]
+          ? results[models.indexOf("Gemini")]
           : undefined,
       };
 
@@ -117,6 +125,11 @@ export default function Home() {
         JSON.stringify([historyItem, ...existingHistory])
       );
     } catch (err) {
+      if (err?.code === "QUOTA_EXCEEDED" || err?.message === "QUOTA_EXCEEDED") {
+        setIsBuyTokensOpen(true);
+        setError("");
+        return;
+      }
       setError("Failed to get response. Please try again.");
       console.error(err);
     } finally {
@@ -131,6 +144,7 @@ export default function Home() {
       {/* Main content */}
       <div className="relative z-10 flex flex-col min-h-screen">
         <WelcomeModal isOpen={isWelcomeOpen} onStart={onStartSelection} />
+        <BuyTokensModal isOpen={isBuyTokensOpen} onClose={() => setIsBuyTokensOpen(false)} />
 
         <HeaderBar />
         <SelectedBadges options={savedOptions} onChangeClick={() => setIsWelcomeOpen(true)} />

@@ -13,6 +13,7 @@
     "github-markdown-css": "^5.8.1",
     "lucide-react": "^0.525.0",
     "next": "^16.2.4",
+    "next-auth": "^4.24.15",
     "prismjs": "^1.30.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
